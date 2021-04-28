@@ -1,0 +1,138 @@
+---
+title: "CDSMutSig"
+author: "Joseph Ng"
+date: "28 April 2021"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{CDSMutSig-vignette}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup, include=FALSE}
+require(BSgenome.Hsapiens.UCSC.hg19)
+require(ensembldb)
+require(EnsDb.Hsapiens.v75)
+require(EnsDb.Hsapiens.v86)
+require(AnnotationFilter)
+library(CDSMutSig)
+```
+
+```CDSMutSig``` is a package containing a series of R functions which manipulates Ensembl database (```EnsDb``` packages) and genome objects (```BSgenome```) available from Bioconductor, to map all possible amino acid (AA) substitutions on Ensembl protein IDs supplied by the user. It filters AA substitutions possible via substituting a single nucleotide (single-nucleotide variants, or SNVs), and map corresponding coding DNA sequence information on these substitutions, allowing classification of such substitutions by their corresponding "mutational signatures", i.e. DNA motifs under which the DNA substitution occuers. Mutational signatures have been used to understand the mechanism and activity of different mutagenic processes on the somatic genome. This package provides functionality to link these understanding on the DNA level to the consequence they pose at the protein level.
+
+This vignette walks through functions available in this package.
+
+# Mapping Ensembl proteins
+
+Functions in the ```CDSMutSig``` package starts from given Ensembl protein IDs. For example, let's consider the canonical MSH2 protein (Ensembl protein ID "ENSP00000233146").
+
+## Get codons corresponding to each amino acid
+
+We first obtain a list of codons (ie DNA triplets from the coding sequence) corresponding to each amino acid position. This can be achieved using the ```mapCodon``` function:
+
+```{r}
+id <- "ENSP00000233146" # canonical MSH2
+codons <- mapCodon(id, ensembldbObj = EnsDb.Hsapiens.v75::EnsDb.Hsapiens.v75,
+                   genomeObj = BSgenome.Hsapiens.UCSC.hg19::Hsapiens, 
+                   seqLevelStyle = "UCSC")
+```
+
+Here, the user is required to indicate three parameters additional to the Ensembl Protein ID of interest:
+
+1. ```ensembldbObj```: An Ensembl Database Object from which protein/transcript mapping, genomic coordinates etc. are acquired. These are available as ```EnsDb``` objects installable from Bioconductor. Here Ensembl version 75 databases are used. *Note*: Genome build GRCh37 is constantly updated in Ensembl up to version 75. This same archived version is provided as continual access to the GRCh37 genome build whilst newer analyses may have switched to the GRCh38 genome, for which more updated Ensembl database version should be used. As of April 2021, Ensembl version 86 can be easily installed from Bioconductor.
+2. ```genomeObj```: A ```BSgenome``` object containing the reference genome. Genomic sequences are obtained from this object. Here we used the hg19 (same coordinates as GRCh37) reference genome from UCSC (```BSgenome.Hsapiens.UCSC.hg19::Hsapiens```). The ```BSgenome.Hsapiens.UCSC.hg19``` package can be downloaded and installed from Bioconductor. For GRCh38, available Bioconductor reference genome objects include the ```BSgenome.Hsapiens.NCBI.GRCh38``` package. **Important**: See below for indications with regards to the ```seqLevelStyle``` parameter when using different genome objects.
+3. ```seqLevelStyle```: This parameter indicates the naming style used in the reference genome. Reference genomes from different sources have different naming conventions; most notably, some reference genomes named chromosomes as "chr1", "chr2", ... "chrX", "chrY", whilst other reference simply uses "1", "2", ... "X", "Y" to name chromosomes. Setting this parameter to match ```genomeObj``` ensures the function to successfully extract coding DNA sequences to map codons. If this does not match ```genomeObj```, an error message will return indicating the function fails to find the named sequence. In this example, because we use the UCSC hg19 genome, we set ```seqLevelStyle``` as "UCSC". If e.g. the ```BSgenome.Hsapiens.NCBI.GRCh38``` genome is used, ```seqLevelStyle``` should be set as "NCBI".
+
+The ```mapCodon``` function gives a data frame of amino acids of the given protein mapped to the codon triplets:
+
+```{r}
+head(codons)
+
+```
+
+## Get all possible missense substitutions arising from single nucleotide changes
+
+We can next use the ```mapMut``` functions to get all possible missense substitutions. One can tabulate, for each amino acid position, mutations to all other 19 amino acids. However some amino acid substitutions have to be resulted from multiple DNA substitutions. The ```getPossibleMissenseSNVs``` function removes these cases, leaving only missense substitutions arising from substituting a single nucleotide. Feeind this to ```mapMut``` wiil filter the substitutions to retain only single-nucleotide $\rightarrow$ single-AA substitutions.
+
+```{r mapMut}
+codons_muts <- mapMut(codons, getPossibleMissenseSNVs())
+head(codons_muts)
+```
+
+## Annotate mutational contexts to list of missense substitutions
+
+Finally, we can annotate this list of missense substitutions by their corresponding mutational contexts. These are defined by the substituted nucleotide position, together with 1 base 5' and 1 base 3' of the substitution. These trinucleotide motifs have been used to define 'mutational signatures', i.e. patterns of DNA motifs attributable to certain mutagenic processes.
+
+```{r mapMutSig}
+codons_mutsigs <- mapMutSig(id, prot_length = nrow(codons), mutMap = codons_muts,
+                            ensembldbObj = EnsDb.Hsapiens.v75::EnsDb.Hsapiens.v75,
+                            genomeObj = BSgenome.Hsapiens.UCSC.hg19::Hsapiens, 
+                            seqLevelStyle = "UCSC")
+```
+
+Here, the same set of parameters in ```mapCodon``` are used. We additional indicate the length of the protein (```prot_length```) and the data frame of missense substitutions (```mutMap```) which we generated previously using ```mapMut```. The following shows the final output, with all possible missense substitutions on the MSH2 protein arising from single-nucleotide substitution, mapped with their corresponding mutational contexts:
+
+```{r}
+head(codons_mutsigs)
+```
+
+# Advanced use cases
+
+## Annotation starting from UniProt IDs
+
+Using mapping provided in Ensembl databases we can start from other forms of protein identifiers. This example below start from the UniProt accession of MSH2 and obtain the mapping to coding DNA sequences:
+
+```{r uniprot}
+uniprots <- "P43246" # MSH2 on uniprot (https://www.uniprot.org/uniprot/P43246)
+ensp <- ensembldb::proteins( EnsDb.Hsapiens.v86::EnsDb.Hsapiens.v86,
+                     filter = AnnotationFilter::UniprotFilter(uniprots),
+                     columns = c("uniprot_id", "protein_id"))
+ensp
+# multiple Ensembl protein entries are mapped to this same UniProt accession.
+# for illustrative purposes, proceed with the first one
+codons <- mapCodon(prot_id = as.character(ensp[1, "protein_id"]), 
+                   ensembldbObj = EnsDb.Hsapiens.v75::EnsDb.Hsapiens.v75,
+                   genomeObj = BSgenome.Hsapiens.UCSC.hg19::Hsapiens, 
+                   seqLevelStyle = "UCSC")
+codons_muts <- mapMut(codons, getPossibleMissenseSNVs())
+codons_mutsigs <- mapMutSig(prot_id = as.character(ensp[1, "protein_id"]), 
+                            prot_length = nrow(codons), mutMap = codons_muts,
+                            ensembldbObj = EnsDb.Hsapiens.v75::EnsDb.Hsapiens.v75,
+                            genomeObj = BSgenome.Hsapiens.UCSC.hg19::Hsapiens, 
+                            seqLevelStyle = "UCSC")
+head(codons_mutsigs)
+```
+
+## Annotation of a list of proteins
+
+We can easily loop through a number of Ensembl protein IDs and obtain exhausive mapping of missense substitutions and DNA mutational contexts, e.g.:
+
+```{r loop}
+multiple_ensp <- c("ENSP00000233146", "ENSP00000442697")
+mutsigs <- lapply(multiple_ensp, function(id){
+  cat(paste0(id, " ...\n"))
+  codons <- mapCodon(id, EnsDb.Hsapiens.v75::EnsDb.Hsapiens.v75,
+                     BSgenome.Hsapiens.UCSC.hg19::Hsapiens, 
+                     seqLevelStyle = "UCSC")
+  # just in case mapping of coding sequences fail for some cases,
+  # this following line ensures failed cases do not preclude looping 
+  # through other cases
+  if( is.null( codons ) ) return(NULL)
+  codons_muts <- mapMut(codons, getPossibleMissenseSNVs())
+  codons_mutsigs <- mapMutSig(id, nrow(codons), codons_muts, 
+                              EnsDb.Hsapiens.v75::EnsDb.Hsapiens.v75,
+                              BSgenome.Hsapiens.UCSC.hg19::Hsapiens, 
+                              seqLevelStyle = "UCSC")
+  codons_mutsigs
+})
+
+```
+
+Note that not mapping between DNA and protein are not perfect; there may be occassion where coding sequence fails to be mapped. When writing loops to process multiple proteins, this needs to be taken into account to handle these exceptions (see above).
