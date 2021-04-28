@@ -1,1 +1,20 @@
 # CDSMutSig
+
+CDSMutSig is a R package containing a set of functions to map, given a protein, its coding DNA sequences, all possible amino acid substitutions as well as their corresponding DNA mutational contexts. This allows analysis of different protein-level consequences caused by different mutagenic processes.
+
+## Installation
+
+In R:
+
+```
+require(devtools)
+install_github("josef0731/CDSMutSig")
+```
+
+## Usage
+
+Please see [this vignette](https://github.com/josef0731/CDSMutSig/raw/main/vignettes/CDSMutSig-vignette.html) for examples.
+
+## Citation
+
+Ng JCF & Fraternali F. Meta-analysis of mutations and deep mutational scanning data reveal protein-level consequences of somatic mutational signatures. *Manuscript in preparation*, 2021.
