@@ -13,7 +13,7 @@ install_github("josef0731/CDSMutSig")
 
 ## Usage
 
-Please see [this vignette](https://htmlpreview.github.io/?https://github.com/josef0731/CDSMutSig/raw/main/vignettes/CDSMutSig-vignette.html) for examples.
+Please see [this vignette](https://htmlpreview.github.io/?https://github.com/josef0731/CDSMutSig/blob/main/vignettes/CDSMutSig-vignette.html) for examples.
 
 ## Citation
 
