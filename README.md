@@ -19,4 +19,4 @@ Please see [this vignette](https://htmlpreview.github.io/?https://github.com/jos
 
 ## Citation
 
-Ng JCF & Fraternali F. Meta-analysis of mutations and deep mutational scanning data reveal protein-level consequences of somatic mutational signatures. *Manuscript in preparation*, 2021.
+Ng JCF & Fraternali F. Meta-analysis of somatic variants and deep mutational scanning data to probe protein structural consequences of DNA mutational signatures. *Manuscript in preparation*, 2021.
