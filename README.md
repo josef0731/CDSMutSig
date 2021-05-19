@@ -10,7 +10,7 @@ In R:
 
 ```
 require(devtools)
-install_github("josef0731/CDSMutSig")
+install_github("josef0731/CDSMutSig", ref = "main")
 ```
 
 ## Usage
@@ -19,4 +19,4 @@ Please see [this vignette](https://htmlpreview.github.io/?https://github.com/jos
 
 ## Citation
 
-Ng JCF & Fraternali F. Meta-analysis of somatic variants and deep mutational scanning data to probe protein structural consequences of DNA mutational signatures. *Manuscript in preparation*, 2021.
+Ng JCF & Fraternali F. Protein structural consequences of DNA mutational signatures: A meta-analysis of somatic variants and deep mutational scanning data. *Manuscript in preparation*, 2021.
