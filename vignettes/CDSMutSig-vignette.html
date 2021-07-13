@@ -151,15 +151,15 @@ codons &lt;-<span class="st"> </span><span class="kw">mapCodon</span>(id, <span 
                             <span class="dt">seqLevelStyle =</span> <span class="st">&quot;UCSC&quot;</span>)
 <span class="co">#&gt; Fetching CDS for 1 proteins ... 1 found</span>
 <span class="co">#&gt; Checking CDS and protein sequence lengths ... 1/1 OK</span></code></pre></div>
-<p>Here, the same set of parameters in <code>mapCodon</code> are used. We additional indicate the length of the protein (<code>prot_length</code>) and the data frame of missense substitutions (<code>mutMap</code>) which we generated previously using <code>mapMut</code>. The following shows the final output, with all possible missense substitutions on the MSH2 protein arising from single-nucleotide substitution, mapped with their corresponding mutational contexts:</p>
+<p>Here, the same set of parameters in <code>mapCodon</code> are used. We additional indicate the length of the protein (<code>prot_length</code>) and the data frame of missense substitutions (<code>mutMap</code>) which we generated previously using <code>mapMut</code>. The following shows the final output, with all possible missense substitutions on the MSH2 protein arising from single-nucleotide substitution, the corresponding genomic coordinates, mapped with their DNA mutational contexts:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">head</span>(codons_mutsigs)
-<span class="co">#&gt;   AA_pos WT_AA MUT_AA WT_codon MUT_codon  MutSig</span>
-<span class="co">#&gt; 1      1     M      T      ATG       ACG A[T&gt;C]G</span>
-<span class="co">#&gt; 2      1     M      L      ATG       TTG A[T&gt;A]G</span>
-<span class="co">#&gt; 3      1     M      K      ATG       AAG A[T&gt;A]G</span>
-<span class="co">#&gt; 4      1     M      R      ATG       AGG A[T&gt;G]G</span>
-<span class="co">#&gt; 5      1     M      L      ATG       CTG A[T&gt;G]G</span>
-<span class="co">#&gt; 6      1     M      I      ATG       ATA C[C&gt;T]A</span></code></pre></div>
+<span class="co">#&gt;   chr    g_pos AA_pos WT_AA MUT_AA WT_codon MUT_codon  MutSig</span>
+<span class="co">#&gt; 1   2 47630332      1     M      T      ATG       ACG A[T&gt;C]G</span>
+<span class="co">#&gt; 2   2 47630331      1     M      L      ATG       TTG A[T&gt;A]G</span>
+<span class="co">#&gt; 3   2 47630332      1     M      K      ATG       AAG A[T&gt;A]G</span>
+<span class="co">#&gt; 4   2 47630332      1     M      R      ATG       AGG A[T&gt;G]G</span>
+<span class="co">#&gt; 5   2 47630331      1     M      L      ATG       CTG A[T&gt;G]G</span>
+<span class="co">#&gt; 6   2 47630333      1     M      I      ATG       ATA C[C&gt;T]A</span></code></pre></div>
 </div>
 </div>
 <div id="advanced-use-cases" class="section level1">
@@ -194,13 +194,13 @@ codons_mutsigs &lt;-<span class="st"> </span><span class="kw">mapMutSig</span>(<
 <span class="co">#&gt; Fetching CDS for 1 proteins ... 1 found</span>
 <span class="co">#&gt; Checking CDS and protein sequence lengths ... 1/1 OK</span>
 <span class="kw">head</span>(codons_mutsigs)
-<span class="co">#&gt;   AA_pos WT_AA MUT_AA WT_codon MUT_codon  MutSig</span>
-<span class="co">#&gt; 1      1     M      T      ATG       ACG A[T&gt;C]G</span>
-<span class="co">#&gt; 2      1     M      L      ATG       TTG A[T&gt;A]G</span>
-<span class="co">#&gt; 3      1     M      K      ATG       AAG A[T&gt;A]G</span>
-<span class="co">#&gt; 4      1     M      R      ATG       AGG A[T&gt;G]G</span>
-<span class="co">#&gt; 5      1     M      L      ATG       CTG A[T&gt;G]G</span>
-<span class="co">#&gt; 6      1     M      I      ATG       ATA C[C&gt;T]A</span></code></pre></div>
+<span class="co">#&gt;   chr    g_pos AA_pos WT_AA MUT_AA WT_codon MUT_codon  MutSig</span>
+<span class="co">#&gt; 1   2 47630332      1     M      T      ATG       ACG A[T&gt;C]G</span>
+<span class="co">#&gt; 2   2 47630331      1     M      L      ATG       TTG A[T&gt;A]G</span>
+<span class="co">#&gt; 3   2 47630332      1     M      K      ATG       AAG A[T&gt;A]G</span>
+<span class="co">#&gt; 4   2 47630332      1     M      R      ATG       AGG A[T&gt;G]G</span>
+<span class="co">#&gt; 5   2 47630331      1     M      L      ATG       CTG A[T&gt;G]G</span>
+<span class="co">#&gt; 6   2 47630333      1     M      I      ATG       ATA C[C&gt;T]A</span></code></pre></div>
 </div>
 <div id="annotation-of-a-list-of-proteins" class="section level2">
 <h2>Annotation of a list of proteins</h2>

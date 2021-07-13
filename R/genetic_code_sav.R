@@ -1,6 +1,15 @@
-# Functions to get possible missense substitutions arising from SNVs,
-# map protein to genomic coordinates and get mutational contexts exhausively for
-# all possible missense subs on a given protein.
+#' CDSMutSig: Mapping Coding Sequences between DNA Mutational signatures and Amino Acid Changes
+#'
+#' A set of functions which use Ensembl and Bioconductor genome objects
+#' to map between given protein sequences to corresponding coding DNA
+#' sequences, extract single-amino acid variants (SNVs) and corresponding
+#' nucleotide substitutions.
+#'
+#' @docType package
+#' @name CDSMutSig
+NULL
+#> NULL
+
 
 ################################
 #' Get possible missense substitutions arising from single-nucleotide variants
@@ -41,6 +50,8 @@ getPossibleMissenseSNVs <- function()
   out <- snvs_missense[, -3] # remove the distance column
   out$WT <- as.character( out$WT )
   out$MUT <- as.character( out$MUT )
+  out$WT_AA <- as.character( out$WT_AA )
+  out$MUT_AA <- as.character( out$MUT_AA )
   # reverse complement the WT and MUT columns
   out2 <- out
   out2$WT <- sapply(out2$WT, function(x) as.character( Biostrings::reverseComplement( Biostrings::DNAString(x) )))
@@ -157,10 +168,13 @@ mapCodon <- function(prot_id, ensembldbObj, genomeObj, seqLevelStyle = "NCBI")
   if( seqLevelStyle == "UCSC" ){
     ensembldb::seqlevelsStyle(g_range) <- "UCSC"; GenomeInfoDb::genome(g_range) <- "hg19"
   }
+  if( any( ! as.character(GenomicRanges::seqnames(g_range)) %in%
+           GenomeInfoDb::seqnames(genomeObj) ) )
+    stop("Failed to fetch CDS. Are you sure you have set the correct seqLevelStyle? (Check package vignette for details.)")
   g_seq <- BSgenome::getSeq(genomeObj, g_range)
   cds_seq <- paste(g_seq, collapse = "")
   # split CDS in codons
-  out <- data.frame( AA_pos = pos, AA = wt)#, codon = unlist(cds_codons) )
+  out <- data.frame( AA_pos = pos, AA = wt, stringsAsFactors = FALSE )#, codon = unlist(cds_codons) )
   out$codon <- sapply(out$AA_pos, function(x) substr(cds_seq, 3*x-2, 3*x))
   out$exon <- sapply(out$AA_pos, function(x){
     if(x %in% split_aa){
@@ -271,14 +285,9 @@ get32Contexts <- function()
 #' @param contexts character vector, all possible DNA motifs on which mutational signatures are defined. Obtained from \code{get32Contexts()} (see example)
 #' @param seqLevelStyle Either "UCSC" or "NCBI". Denote conventions used in genome object to name chromosomes. Need changing to match the genome object. (Default: "NCBI")
 #'
-#' @return A data.frame with six columns:
-#'   \code{AA}: wild-type amino acid (one-letter code)
-#'   \code{WT_codon}: codon corresponding to wild-type amino acid
-#'   \code{AA_pos}: integer, amino acid position of the given Ensembl protein
-#'   \code{exon}: the exon(s) in which the given \code{AA} can be found. Amino acids which span across exons are denoted as a semicolon-separated triplets of exon IDs, with each entry corresponding to each position of the codon.
-#'   \code{MUT_codon}: codon corresponding to mutant amino acid
-#'   \code{MUT_AA}: mutant amino acid (one-letter code)
-#' @return A data.frame with six columns:
+#' @return A data.frame with eight columns:
+#'   \code{chr}: chromosome
+#'   \code{g_pos}: genomic position
 #'   \code{AA_pos}: integer, amino acid position of the given Ensembl protein
 #'   \code{WT_AA}: wild-type amino acid (one-letter code)
 #'   \code{MUT_AA}: mutant amino acid (one-letter code)
@@ -312,8 +321,38 @@ mapMutSig <- function(prot_id, prot_length, mutMap, ensembldbObj, genomeObj,
     stop("genomeObj should be a BSgenome object. Check documentation of mapCodon function.")
   if( !seqLevelStyle %in% c("NCBI", "UCSC") )
     stop("seqLevelStyle must be either 'NCBI' or 'UCSC'. Check documentation of mapCodon function.")
+  if( class( all.equal.character( colnames( mutMap ),
+                                  c("AA", "WT_codon", "AA_pos",  "exon", "MUT_codon", "MUT_AA")) ) == "character" )
+    stop("mutMap appears to be different from output of the mapMut function. Please ensure you directly pass the output from mapMut for this parameter.")
   seqrange <- IRanges::IRanges(start = 1, end = prot_length, names = prot_id)
   g_range <- ensembldb::proteinToGenome(seqrange, ensembldbObj)[[1]]
+  mutMap <- mutMap[ which(!is.na(mutMap$MUT_codon)), ]
+  # which position of the codon (1, 2 or 3) is mutated?
+  mutMap$codon_pos <- apply(mutMap[, c("WT_codon", "MUT_codon")], MARGIN = 1,
+                            function(x) getMutCodonPos(x[1], x[2]))
+  mutMap$exon <- apply(mutMap[, c("exon", "codon_pos")], MARGIN = 1, function(x){
+    if( grepl(";", x[1])){
+      # if split exon, identify which exon the mutated nt is in, and substitute
+      exon_list <- unlist(strsplit(x[1], split = ";"))
+      as.numeric( exon_list[ as.numeric(x[2]) ] )
+    } else as.numeric( x[1] )
+  })
+  # get genomic position of the substitution
+  # = start(r) + 3n + m - 4 - sum(l_x) where x in [1, ..., r - 1]
+    # n = AA position
+    # m = mutated position in codon (i.e. either 1, 2 or 3), and
+    # this mutated position is in the rth exon
+  g_pos <- data.frame(g_range[, 1:4])
+  g_pos$seqnames <- as.character(g_pos$seqnames)
+  mutMap_gpos <- apply(mutMap, MARGIN = 1, function(x){
+    n <- as.numeric(x[3]); m <- as.numeric(x[7]); r <- as.numeric(x[4])
+    pos <- as.numeric(g_pos[r, "start"]) + 3 * n + m - 4
+    if( r > 1 ) pos <- pos - sum( g_pos[1:(r-1), "width"])
+    return(c(g_pos[1, "seqnames"], pos))
+  })
+  mutMap_gpos <- data.frame(t(mutMap_gpos), stringsAsFactors = FALSE)
+  colnames(mutMap_gpos) <- c("chr", "pos")
+  mutMap_gpos$pos <- as.numeric(mutMap_gpos$pos)
   # get the CDS with flanking lengths added to starts and ends of each exon;
   # subsetting this sequence at correct positions will give the sequence context of subs
   GenomicRanges::start(g_range) <- GenomicRanges::start(g_range) - flank
@@ -321,12 +360,12 @@ mapMutSig <- function(prot_id, prot_length, mutMap, ensembldbObj, genomeObj,
   if( seqLevelStyle == "UCSC" ){
     ensembldb::seqlevelsStyle(g_range) <- "UCSC"; GenomeInfoDb::genome(g_range) <- "hg19"
   }
+  if( any( ! as.character(GenomicRanges::seqnames(g_range)) %in%
+           GenomeInfoDb::seqnames(genomeObj) ) )
+    stop("Failed to fetch CDS. Are you sure you have set the correct seqLevelStyle? (Check package vignette for details.)")
   context_seq <- BSgenome::getSeq(genomeObj, g_range)
   context_seq <- paste(context_seq, collapse = "")
-  mutMap <- mutMap[ which(!is.na(mutMap$MUT_codon)), ]
-  # which position of the codon (1, 2 or 3) is mutated?
-  mutMap$codon_pos <- apply(mutMap[, c("WT_codon", "MUT_codon")], MARGIN = 1,
-                            function(x) getMutCodonPos(x[1], x[2]))
+  # extract WT and MUT nucleotides
   mutMap$WT_nt <- substr(mutMap$WT_codon, mutMap$codon_pos, mutMap$codon_pos)
   mutMap$MUT_nt <- substr(mutMap$MUT_codon, mutMap$codon_pos, mutMap$codon_pos)
   # transform the codon_pos to actual pos in the assembled context_seq
@@ -336,11 +375,6 @@ mapMutSig <- function(prot_id, prot_length, mutMap, ensembldbObj, genomeObj,
     # n = AA position
     # m = mutated position in codon (i.e. either 1, 2 or 3), and
     # k = f + 2f(r - 1) if this mutated position is in the rth exon and f = flank
-    if( grepl(";", x[2])){
-      # if split exon, identify which exon the mutated nt is in, and substitute
-      exon_list <- unlist(strsplit(x[2], split = ";"))
-      x[2] <- as.numeric( exon_list[ as.numeric(x[3]) ] )
-    }
     x <- as.numeric(x)
     3*x[1] + flank + 2 * flank * (x[2] - 1) + x[3] - 3
   })
@@ -360,6 +394,7 @@ mapMutSig <- function(prot_id, prot_length, mutMap, ensembldbObj, genomeObj,
            ">", x[2], "]", substr(x[1], 2 + flank, nchar(x[1])))
   })
   out <- mutMap[, c("AA_pos", "AA", "MUT_AA", "WT_codon", "MUT_codon", "MutSig")]
-  colnames(out) <- c("AA_pos", "WT_AA", "MUT_AA", "WT_codon", "MUT_codon", "MutSig")
+  out <- data.frame( mutMap_gpos, out, stringsAsFactors = FALSE )
+  colnames(out) <- c("chr", "g_pos", "AA_pos", "WT_AA", "MUT_AA", "WT_codon", "MUT_codon", "MutSig")
   out
 }

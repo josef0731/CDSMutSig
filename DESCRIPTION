@@ -1,12 +1,14 @@
 Package: CDSMutSig
 Type: Package
 Title: Mapping Coding Sequences between DNA Mutational signatures and Amino Acid Changes
-Version: 0.1.0
-Author: Joseph Ng, Franca Fraternali
+Version: 0.2.0
+Authors@R: c(
+    person("Joseph", "Ng", email = "joseph.chifung.ng@gmail.com", role = c("cre", "aut")),
+    person("Franca", "Fraternali", role = "aut"))
 Maintainer: Joseph Ng <joseph.chifung.ng@gmail.com>
 Description: A set of functions which use Ensembl and Bioconductor genome objects to map between given protein sequences to corresponding coding DNA sequences, extract single-amino acid variants (SNVs) and corresponding nucleotide substitutions.
     Map mutational signatures for all possible substitutions.
-License: GPL
+License: GPL-3 + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Imports:
@@ -20,6 +22,10 @@ Imports:
     reshape2
 Suggests: 
     knitr,
-    rmarkdown
+    rmarkdown,
+    EnsDb.Hsapiens.v75,
+    EnsDb.Hsapiens.v86,
+    BSgenome.Hsapiens.UCSC.hg19,
+    testthat
 VignetteBuilder: knitr
 RoxygenNote: 7.1.0

@@ -33,15 +33,9 @@ mapMutSig(
 \item{seqLevelStyle}{Either "UCSC" or "NCBI". Denote conventions used in genome object to name chromosomes. Need changing to match the genome object. (Default: "NCBI")}
 }
 \value{
-A data.frame with six columns:
-  \code{AA}: wild-type amino acid (one-letter code)
-  \code{WT_codon}: codon corresponding to wild-type amino acid
-  \code{AA_pos}: integer, amino acid position of the given Ensembl protein
-  \code{exon}: the exon(s) in which the given \code{AA} can be found. Amino acids which span across exons are denoted as a semicolon-separated triplets of exon IDs, with each entry corresponding to each position of the codon.
-  \code{MUT_codon}: codon corresponding to mutant amino acid
-  \code{MUT_AA}: mutant amino acid (one-letter code)
-
-A data.frame with six columns:
+A data.frame with eight columns:
+  \code{chr}: chromosome
+  \code{g_pos}: genomic position
   \code{AA_pos}: integer, amino acid position of the given Ensembl protein
   \code{WT_AA}: wild-type amino acid (one-letter code)
   \code{MUT_AA}: mutant amino acid (one-letter code)

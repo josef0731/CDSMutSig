@@ -77,7 +77,7 @@ codons_mutsigs <- mapMutSig(id, prot_length = nrow(codons), mutMap = codons_muts
                             seqLevelStyle = "UCSC")
 ```
 
-Here, the same set of parameters in ```mapCodon``` are used. We additional indicate the length of the protein (```prot_length```) and the data frame of missense substitutions (```mutMap```) which we generated previously using ```mapMut```. The following shows the final output, with all possible missense substitutions on the MSH2 protein arising from single-nucleotide substitution, mapped with their corresponding mutational contexts:
+Here, the same set of parameters in ```mapCodon``` are used. We additional indicate the length of the protein (```prot_length```) and the data frame of missense substitutions (```mutMap```) which we generated previously using ```mapMut```. The following shows the final output, with all possible missense substitutions on the MSH2 protein arising from single-nucleotide substitution, the corresponding genomic coordinates, mapped with their DNA mutational contexts:
 
 ```{r}
 head(codons_mutsigs)
